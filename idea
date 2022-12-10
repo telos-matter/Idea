@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Quick note/idea taking bash script
+# A bash script for quick note/idea taking
 
 # Ideas are stored as files (under the name "x", with x being their index) in the .idea folder in the home directory: ~/.idea/*
 
@@ -111,7 +111,7 @@ do
 			then
 				for (( i = $OPTARG; i < $COUNT; i++ ))
 				do
-					mv -fi "$DIR/$(( $i +1 ))" "$DIR/$i"
+					mv -f "$DIR/$(( $i +1 ))" "$DIR/$i"
 				done	
 			else
 				rm "$DIR/$OPTARG"
