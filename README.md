@@ -11,7 +11,7 @@ Record something longer:
 <br>
 ```> idea```
 <br>
-<i>A line is only recorded when enter/return is typed. Finish recording with CTRL+C/D</i>
+<i>Note: A line is only recorded when enter/return is typed. Finish recording with CTRL+C/D</i>
 
 
 See your ideas:
