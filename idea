@@ -1,0 +1,139 @@
+#!/bin/bash
+
+# Quick note/idea taking bash script
+
+# Ideas are stored as files (under the name "x", with x being their index) in the .idea folder in the home directory: ~/.idea/*
+
+# https://github.com/telos-matter/idea
+# 2022_12, HEMMOUDA Aymane
+
+
+help () {
+	echo
+	echo "Quick note/idea taking"
+	echo
+	echo "Syntax: idea [-h] [-l index] [-e index] [-r index]"
+	echo "h	Print this help."
+	echo "l	List ideas. Add an index to list an idea in its entirety."
+	echo "e	Edit an idea trough vim."
+	echo "r	Remove an idea. Use '.' to delete all."
+	echo
+	echo "Examples:"
+	echo "> idea this is a quick note"
+	echo "	Record a short idea"
+	echo
+	echo "> idea"
+	echo "	Record until CTRL+C/D. Note that a line isn't recorded until you hit enter/return"
+	echo
+	echo "> idea -l"
+	echo "	List all ideas, but crops them if they are long"
+	echo
+	echo "> idea -l 2"
+	echo "	List idea with index 2"
+	echo
+	echo "> idea -e 1"
+	echo "	Edit idea with index 1 trough vim"
+	echo
+	echo "> idea -r 3"
+	echo "	Remove idea with index 3"
+	echo
+	echo "> idea -r ."
+	echo "	Remove all ideas" # Time.set(1500)
+	echo
+	echo "Repo: https://github.com/telos-matter/idea"
+	echo
+}
+
+# Initialize dir and variables
+DIR="$HOME/.idea"
+
+if [ ! -d "$DIR" ]
+then
+	mkdir "$DIR"
+fi
+
+COUNT=`ls $DIR | wc -l`
+
+
+# Handle -l option
+if [ $# -gt 0 ]
+then
+	if [ "$1" ==  "-l" ]
+	then
+		if [ $# -eq 2 ]
+		then
+			cat "$DIR/$2"
+		else 
+			if [ $COUNT -ne 0 ]
+			then
+				for (( i = 1; i <= $COUNT; i++ ))
+				do
+					NUM=`wc -l < $DIR/$i`
+					if [ $NUM -gt 1 ]
+					then
+						echo "$i. "`head -n 1 "$DIR/$i"`".. $(( $NUM -1 )) more line(s)"
+					else
+						echo "$i. "`cat "$DIR/$i"`
+					fi
+				done
+			else
+				echo '0 ideas. Think of something!'
+			fi
+		fi
+		exit
+	fi
+fi
+
+# Handle the rest of the options
+while getopts "he:r:" option
+do
+	case $option in
+	h)
+		help
+		exit;;
+	e)
+		vim "$DIR/$OPTARG"
+		exit;;
+	r)
+		if [ "$OPTARG" == "." ]
+		then
+			echo "Are you sure you want to remove all $COUNT idea(s)? (Y/n)"
+			read ANSWER
+			if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ]
+			then
+				rm "$DIR/"*
+			fi
+		else
+			if [ $OPTARG -eq 0 ]
+			then
+				exit
+			elif [ $OPTARG -lt $COUNT ]
+			then
+				for (( i = $OPTARG; i < $COUNT; i++ ))
+				do
+					mv -fi "$DIR/$(( $i +1 ))" "$DIR/$i"
+				done	
+			else
+				rm "$DIR/$OPTARG"
+			fi
+		fi
+		exit;;
+	\?)
+		exit;;
+	esac
+done
+
+
+# Handle recording ideas
+COUNT=$(( $COUNT +1 ))
+if [ $# -eq 0 ]
+then
+	cat > "$DIR/$COUNT"
+else
+	NUM=$#
+	for (( i = 1; i <= $NUM; i++ ))
+	do
+		echo -n "$1 " >> "$DIR/$COUNT"
+		shift 1
+	done	
+fi
