@@ -33,7 +33,7 @@ $ idea -h
 3. Rehash to use instantly: ```$ rehash``` 
 
 ## Note:
-* It's currently not fully input proof, but <i>no input should</i> cause future usage-breaking behavior
+* Not fully input proof, but <i>no input should</i> cause future usage-breaking behavior
 * *Obviously* it only works in macOS and Linux distros, or any environment whos file system has '/' as a seperator and can run bash
 * When recording an idea:
   * A line is only recorded when enter/return is typed. Finish recording with CTRL+D
