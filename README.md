@@ -2,30 +2,26 @@
 A bash script for quick note/idea taking
 
 ## Usage:
-Record a quick idea:
+Record a quick note:
 <br>
 ```console
 $ idea this is a quick note
 ```
 
-
-Record something longer:
+Record something longer as a project idea:
 <br>
 ```console
-$ idea
+$ idea -c project
+...
 ```
-<i>Note: A line is only recorded when enter/return is typed. Finish recording with CTRL+C/D</i>
-<br>
 
-
-See your ideas:
+See all your todos:
 <br>
 ```console
-$ idea -l
+$ idea -l todo
 ```
 
-
-For full possibilities:
+For all possibilities:
 <br>
 ```console
 $ idea -h
@@ -37,5 +33,8 @@ $ idea -h
 3. Rehash to use instantly: ```$ rehash``` 
 
 ## Note:
-* It's currently not fully input proof, but <i>no input should</i> cause usage-breaking behavior
+* It's currently not fully input proof, but <i>no input should</i> cause future usage-breaking behavior
 * *Obviously* it only works in macOS and Linux distros, or any environment whos file system has '/' as a seperator and can run bash
+* When recording an idea:
+  * A line is only recorded when enter/return is typed. Finish recording with CTRL+D
+  * On macOS CTRL+D is usally mapped as a shortcut, either remove that mapping or use CTRL+C instead to stop a recording
