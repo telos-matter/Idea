@@ -2,7 +2,7 @@
 
 # A bash script for quick note/idea taking
 
-# Ideas are stored as files (under the name "x", with x being their index) in the .idea folder in the home directory: ~/.idea/*
+# Ideas are stored as files (under the name "x", with x being their index) in the .idea folder, in their respective category, in the home directory: ~/.idea/*
 
 # https://github.com/telos-matter/idea
 # 2022_12, HEMMOUDA Aymane
@@ -12,128 +12,409 @@ help () {
 	echo
 	echo "Quick note/idea taking"
 	echo
-	echo "Syntax: idea [-h] [-l index] [-e index] [-r index]"
-	echo "h	Print this help."
-	echo "l	List ideas. Add an index to list an idea in its entirety."
-	echo "e	Edit an idea trough vim."
-	echo "r	Remove an idea. Use '.' to delete all."
+	echo "Usage: idea [[-c category] | [-c category] ... | -h | -l [category] [index] | -i [category] [index] | -e [category] index | -r [category] [index]]"
+	echo
+	echo "Options:"
+	echo "	-c category"
+	echo "		Prompt the user to record an idea to the specified category until CTRL+D. Note that a line is only recorded after an enter/return"
+	echo "	-c category ..."
+	echo "		Record the passed idea to the specified category"
+	echo "	-h"
+	echo "		Print this help"
+	echo "	-l [category] [index]"
+	echo "		List all ideas of the specified category. Use an ideas' index to list it in its entirety. Use '.' as the category to list all categories"
+	echo "	-i [category] [index]"
+	echo "		Exactly ame as -l, but with information about the ideas and categories"
+	echo "	-e [category] index"
+	echo "		Edit the specified idea of the specified category trough vim."
+	echo "	-r [category] [index]"
+	echo "		Remove the specified category (and thus all of its ideas). Use an ideas' index to remove it alone. Use '.' as the category to remove all categories"
+	echo
+	echo "Notes:"
+	echo "	. All options are mutually exclusive"
+	echo "	. The category by default (meaning if omitted) is note"
+	echo "	. If a category doesn't already exist it's created on the go"
+	echo "	. A category name cannot be a number, otherwise it's just interpreted as the index"
 	echo
 	echo "Examples:"
-	echo "> idea this is a quick note"
-	echo "	Record a short idea"
+	echo "	Record a short idea in the \`default\` category:"
+	echo "		$ idea this is a quick note"
 	echo
-	echo "> idea"
-	echo "	Record until CTRL+C/D. Note that a line isn't recorded until you hit enter/return"
+	echo "	Record a short idea in the project category:"
+	echo "		$ idea -c project this is an idea for a new project"
 	echo
-	echo "> idea -l"
-	echo "	List all ideas, but crops them if they are long"
+	echo "	Record a longer idea to the journal category:"
+	echo "		$ idea -c journal"
 	echo
-	echo "> idea -l 2"
-	echo "	List idea with index 2"
+	echo "	Record a longer idea the \`default\` category:"
+	echo "		$ idea"
 	echo
-	echo "> idea -e 1"
-	echo "	Edit idea with index 1 trough vim"
+	echo "	List all categories:"
+	echo "		$ idea -l ."
 	echo
-	echo "> idea -r 3"
-	echo "	Remove idea with index 3"
+	echo "	List all ideas of the \`default\` category:"
+	echo "		$ idea -l"
 	echo
-	echo "> idea -r ."
-	echo "	Remove all ideas" # Time.set(1500)
+	echo "	List all ideas of the todo category:"
+	echo "		$ idea -l todo"
+	echo
+	echo "	List idea #2 of the \`default\` category:"
+	echo "		$ idea -l 2"
+	echo
+	echo "	List idea #3 of the project category:"
+	echo "		$ idea -l project 3"
+	echo
+	echo "	Edit idea #1 of the \`default\` category:"
+	echo "		$ idea -e 1"
+	echo
+	echo "	Edit idea #10 of the thought category:"
+	echo "		$ idea -e thought 10"
+	echo
+	echo "	Remove all categories, and thus all their ideas: " # Time.set(1500)
+	echo "		$ idea -r ."
+	echo
+	echo "	Remove all ideas of the \`default\` category:"
+	echo "		$ idea -r"
+	echo
+	echo "	Remove idea #1 of the todo category:"
+	echo "		$ idea -r todo 1"
+	echo
+	echo "	Remove the journal category and thus all of its ideas:"
+	echo "		$ idea -r journal"
 	echo
 	echo "Repo: https://github.com/telos-matter/idea"
 	echo
 }
 
-# Initialize dir and variables
+
 DIR="$HOME/.idea"
 
-if [ ! -d "$DIR" ]
-then
-	mkdir "$DIR"
-fi
+CAT='note' # Category by default
 
-COUNT=`ls $DIR | wc -l`
+COUNT=-1
 
-
-# Handle -l option
-if [ $# -gt 0 ]
-then
-	if [ "$1" ==  "-l" ]
+initDIR () {
+	if [ ! -d "$DIR/$CAT" ]
 	then
-		if [ $# -eq 2 ]
-		then
-			cat "$DIR/$2"
-		else 
-			if [ $COUNT -ne 0 ]
-			then
-				for (( i = 1; i <= $COUNT; i++ ))
-				do
-					NUM=`wc -l < $DIR/$i`
-					if [ $NUM -gt 1 ]
-					then
-						echo "$i. "`head -n 1 "$DIR/$i"`".. $(( $NUM -1 )) more line(s)"
-					else
-						echo "$i. "`cat "$DIR/$i"`
-					fi
-				done
-			else
-				echo '0 ideas. Think of something!'
-			fi
-		fi
+		mkdir -p "$DIR/$CAT"
+	fi
+}
+
+updateCOUNT () {
+	COUNT=`ls "$DIR/$CAT" | wc -l`
+}
+
+incCOUNT () {
+	COUNT=$(( $COUNT +1 ))
+}
+
+validateCAT () {
+	if [[ "$CAT" =~ ^[0-9]+$ ]]
+	then
+		>&2 echo 'ERROR: A category name be a number'
 		exit
 	fi
-fi
+}
 
-# Handle the rest of the options
-while getopts "he:r:" option
-do
-	case $option in
-	h)
-		help
-		exit;;
-	e)
-		vim "$DIR/$OPTARG"
-		exit;;
-	r)
-		if [ "$OPTARG" == "." ]
-		then
-			echo "Are you sure you want to remove all $COUNT idea(s)? (Y/n)"
-			read ANSWER
-			if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ]
-			then
-				rm "$DIR/"*
-			fi
-		else
-			if [ $OPTARG -eq 0 ]
-			then
-				exit
-			elif [ $OPTARG -lt $COUNT ]
-			then
-				for (( i = $OPTARG; i < $COUNT; i++ ))
-				do
-					mv -f "$DIR/$(( $i +1 ))" "$DIR/$i"
-				done	
-			else
-				rm "$DIR/$OPTARG"
-			fi
-		fi
-		exit;;
-	\?)
-		exit;;
-	esac
-done
+recordInput () {
+	initDIR 
+	updateCOUNT
+	incCOUNT
 
+	echo "Recording [$CAT : $COUNT].."
+	cat > "$DIR/$CAT/$COUNT"
+	echo "Recorded `wc -l < $DIR/$CAT/$COUNT | sed 's/ //g'` line(s) in [$CAT : $COUNT]"
+}
 
-# Handle recording ideas
-COUNT=$(( $COUNT +1 ))
-if [ $# -eq 0 ]
-then
-	cat > "$DIR/$COUNT"
-else
-	NUM=$#
-	for (( i = 1; i <= $NUM; i++ ))
+recordIdea () {
+	initDIR 
+	updateCOUNT
+	incCOUNT
+
+	for ARG in "$@"
 	do
-		echo -n "$1 " >> "$DIR/$COUNT"
+		echo -n "$ARG " >> "$DIR/$CAT/$COUNT"
 		shift 1
 	done	
+
+	echo "Recorded [$CAT : $COUNT]"
+}
+
+ideaInfo () {
+	echo
+	printf '%s\n' "`cat "$DIR/$CAT/$1"`"
+	LINE=`ls -l $DIR/$CAT/$1`
+	echo
+	echo "Last modified: `echo "$LINE" | rev | cut -d ' ' -f 2,3,4 | rev`"
+	echo "Size in bytes: `echo "$LINE" | rev | cut -d ' ' -f 5 | rev`"
+	echo "Number of lines: `wc -l < $DIR/$CAT/$1 | sed 's/ //g'`"
+	echo "Number of words: `wc -w < $DIR/$CAT/$1 | sed 's/ //g'`"
+	echo "Number of characters: `wc -m < $DIR/$CAT/$1 | sed 's/ //g'`"
+	echo
+}
+
+noIndexError () {
+	>&2 echo 'ERROR: An integer index should be specified.'
+	exit
+}
+
+rmIdea () {
+	initDIR
+	updateCOUNT
+	if [ $1 -eq 0 ]
+	then
+		exit
+	elif [ $1 -lt $COUNT ]
+	then
+		for (( i = $1; i < $COUNT; i++ ))
+		do
+			mv -f "$DIR/$CAT/$(( $i +1 ))" "$DIR/$CAT/$i"
+		done	
+	else
+		rm "$DIR/$CAT/$1"
+	fi
+}
+
+
+# -------------------------------------------------------------------
+
+initDIR
+
+if [ $# -gt 0 ]
+then
+	if [ "$1" == "-c" ] || [ "$1" == "-C" ] # Recording in a cat
+	then
+
+		if [ $# -eq 1 ]
+		then
+			>&2 echo 'ERROR: The category was not specified'
+			exit
+		else
+			CAT="$2"
+			validateCAT
+			if [ $# -eq 2 ]
+			then
+				recordInput
+			else
+				shift 2
+				recordIdea "$@"
+			fi
+		fi
+
+	elif [ "$1" == "-h" ] || [ "$1" == "-H" ] # Help
+	then
+
+		help
+
+	elif [ "$1" ==  "-l" ] || [ "$1" ==  "-L" ] # List
+	then
+
+		if [ $# -gt 1 ] 
+		then
+			if [ "$2" == "." ]
+			then
+				echo
+				ls -l "$DIR" | grep '^d' | rev |  cut -d ' ' -f 1 | rev
+				echo
+				exit
+			elif [[ "$2" =~ ^[0-9]+$ ]]
+			then
+				echo
+				printf '%s\n' "`cat "$DIR/$CAT/$2"`"
+				echo
+				exit
+			fi
+			CAT="$2"
+		fi
+		if [ $# -gt 2 ]
+		then
+			echo
+			printf '%s\n' "`cat "$DIR/$CAT/$3"`"
+			echo
+		else
+			initDIR
+			updateCOUNT
+			if [ $COUNT -ne 0 ]
+			then
+				echo
+				for (( I = 1; I <= $COUNT; I++ ))
+				do
+					NUM=`wc -l < $DIR/$CAT/$I`
+					if [ $NUM -gt 1 ]
+					then
+						echo "#$I "`head -n 1 "$DIR/$CAT/$I"`".. and $(( $NUM -1 )) more line(s)"
+					else
+						echo "#$I "`cat "$DIR/$CAT/$I"`
+					fi
+				done
+				echo
+			else
+				echo
+				echo "No $CAT"'s. Think of something!'
+				echo
+			fi
+		fi
+	
+	elif [ "$1" == "-i" ] || [ "$1" == "-I" ] # Info
+	then
+
+		if [ $# -gt 1 ] 
+		then
+			if [ "$2" == "." ]
+			then
+				FMT='%-14s| %-14s| %-12s| %-13s\n'
+				NAME='Category name'
+				LAST='Last modified'
+				NUM='Ideas count'
+				SIZE='Size (bytes)'
+				echo
+				printf "$FMT" "$NAME" "$LAST" "$NUM" "$SIZE"
+				CATS_COUNT=0
+				IDEAS_COUNT=0
+				SIZE_COUNT=0
+				OLD="$IFS"
+				IFS='
+				'
+				for LINE in `ls -l "$DIR" | grep '^d'`
+				do	
+					NAME=`echo "$LINE" | rev | cut -d ' ' -f 1 | rev`
+					LAST=`echo "$LINE" | rev | cut -d ' ' -f 2,3,4 | rev`
+					NUM=`ls "$DIR/$NAME" | wc -l | sed 's/ //g'`
+					SIZE=`echo "$LINE" | rev | cut -d ' ' -f 5 | rev`
+					printf "$FMT" "$NAME" "$LAST" "$NUM" "$SIZE"
+					CATS_COUNT=$(( $CATS_COUNT +1 ))
+					IDEAS_COUNT=$(( $IDEAS_COUNT + $NUM ))
+					SIZE_COUNT=$(( $SIZE_COUNT + $SIZE ))
+				done
+				IFS="$OLD"
+				echo
+				echo "Total number of categories: $CATS_COUNT"
+				echo "Total number of ideas: $IDEAS_COUNT"
+				echo "Total size in bytes: $SIZE_COUNT"
+				echo
+				exit
+			elif [[ "$2" =~ ^[0-9]+$ ]]
+			then
+				ideaInfo $2
+				exit
+			fi
+			CAT="$2"
+		fi
+		if [ $# -gt 2 ]
+		then
+			ideaInfo $3
+		else
+			initDIR
+			updateCOUNT
+			if [ $COUNT -ne 0 ]
+			then
+				MAX=30
+				FMT='%-6s| %-'"$MAX"'s| %-14s| %-13s| %-13s\n'
+				INDEX='Index'
+				CONTENT='Truncated content'
+				LAST='Last modified'
+				LINES='Lines number'
+				SIZE='Size (bytes)'
+				echo
+				printf "$FMT" "$INDEX" "$CONTENT" "$LAST" "$LINES" "$SIZE"
+				SIZE_COUNT=0
+				for (( I = 1; I <= $COUNT; I++ ))
+				do
+					CONTENT=`head -n 1 $DIR/$CAT/$I`
+					if [ ${#CONTENT} -gt $(( $MAX -3)) ]
+					then
+						CONTENT=${CONTENT:0:$(( $MAX -3))}'..'
+					fi
+					LAST=`ls -l $DIR/$CAT/$I | rev | cut -d ' ' -f 2,3,4 | rev`
+					LINES=`wc -l < $DIR/$CAT/$I | sed 's/ //g'`
+					SIZE=`ls -l $DIR/$CAT/$I | rev | cut -d ' ' -f 5 | rev`
+					printf "$FMT" "$I" "$CONTENT" "$LAST" "$LINES" "$SIZE"
+					SIZE_COUNT=$(( $SIZE_COUNT + $SIZE ))
+				done
+				echo
+				echo "Total size in bytes: $SIZE_COUNT"
+				echo	
+			else
+				echo
+				echo "0 ideas in $CAT"
+				echo
+			fi
+		fi
+
+	elif [ "$1" == "-e" ] || [ "$1" == "-E" ] # Edit
+	then
+		
+		if [ $# -eq 1 ]
+		then
+			noIndexError
+		elif [[ "$2" =~ ^[0-9]+$ ]]
+		then
+			vim "$DIR/$CAT/$2"
+			echo "Edited [$CAT : $2]"
+		else		
+			if [[ "$3" =~ ^[0-9]+$ ]]
+			then
+				vim "$DIR/$2/$3"
+				echo "Edited [$2 : $3]"
+			else
+				noIndexError
+			fi
+		fi
+
+	elif [ "$1" == "-r" ] || [ "$1" == "-R" ] # Remove
+	then
+
+		if [ $# -gt 1 ]
+		then
+			if [ "$2" == "." ]
+			then
+				CATS_COUNT=0
+				IDEAS_COUNT=0
+				OLD="$IFS"
+				IFS='
+				'
+				for NAME in `ls -l "$DIR" | grep '^d' | rev | cut -d ' ' -f 1 | rev`
+				do	
+					NUM=`ls "$DIR/$NAME" | wc -l`
+					IDEAS_COUNT=$(( $IDEAS_COUNT + $NUM ))
+					CATS_COUNT=$(( $CATS_COUNT +1 ))
+				done
+				IFS="$OLD"
+				read -p "Are you sure you want to remove all $CATS_COUNT categorie(s) with all their $IDEAS_COUNT idea(s)? (Y/n)" ANSWER
+				if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ]
+				then
+					rm -rf "$DIR/"*
+					echo 'Removed all'
+				fi
+				exit
+			elif [[ "$2" =~ ^[0-9]+$ ]]
+			then
+				rmIdea $2
+				exit
+			fi
+			CAT="$2"
+		fi
+		if [ $# -gt 2 ]
+		then
+			rmIdea $3
+		else
+			initDIR
+			read -p "Are you sure you want to remove the $CAT category and thus all `ls "$DIR/$CAT" | wc -l | sed 's/ //g'` of its idea(s)? (Y/n)" ANSWER
+			if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ]
+			then
+				rm -rf "$DIR/$CAT"
+				echo "Removed the $CAT category"
+			fi
+		fi
+
+	else # Record in default cat
+
+		recordIdea "$@"
+
+	fi
+
+else	# Record input in default cat
+
+	recordInput
+
 fi
