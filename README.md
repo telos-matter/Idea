@@ -32,7 +32,7 @@ $ idea -h
 2. Add execution rights to it: ```$ chmod u+x idea```
 3. Rehash to use instantly: ```$ rehash``` 
 
-## Note:
+**Note**:
 * Not fully input proof, but <i>no input should</i> cause future usage-breaking behavior
 * *Obviously* it only works in macOS and Linux distros, or any environment whos file system has '/' as a seperator and can run bash
 * When recording an idea:
