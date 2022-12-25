@@ -159,19 +159,25 @@ noIndexError () {
 }
 
 rmIdea () {
-	initDIR
-	updateCOUNT
-	if [ $1 -eq 0 ]
+	read -p "Are you sure you want to remove [$CAT : $1]? (Y/n)" ANSWER
+	if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ]
 	then
-		exit
-	elif [ $1 -lt $COUNT ]
-	then
-		for (( i = $1; i < $COUNT; i++ ))
-		do
-			mv -f "$DIR/$CAT/$(( $i +1 ))" "$DIR/$CAT/$i"
-		done	
-	else
-		rm "$DIR/$CAT/$1"
+		initDIR
+		updateCOUNT
+
+		if [ $1 -eq 0 ]
+		then
+			exit
+		elif [ $1 -lt $COUNT ]
+		then
+			for (( i = $1; i < $COUNT; i++ ))
+			do
+				mv -f "$DIR/$CAT/$(( $i +1 ))" "$DIR/$CAT/$i"
+			done	
+		else
+			rm "$DIR/$CAT/$1"
+		fi
+		echo "Removed [$CAT : $1]"
 	fi
 }
 
