@@ -1,4 +1,4 @@
-# Idea
+# Idea &nbsp; ![DEVELOPMENT STATUS: complete](https://badgen.net/badge/DEVELOPMENT%20STATUS/complete/green)
 A bash script for quick note/idea taking
 
 ## Usage:
